@@ -1,0 +1,75 @@
+---
+title: "OFFSIDES"
+output:
+  html_document:
+    theme: cosmo
+    highlight: pygments
+    includes:
+      after_body: ./include/after_body.html
+csl: ./cite-styles/plos-mod.csl
+bibliography: references.bib
+---
+
+```{r global_options, include=FALSE}
+knitr::opts_chunk$set(
+  fig.width = 10,
+  fig.path = 'figures/',
+  warning = FALSE,
+  message = FALSE,
+  fig.retina = 2
+)
+```
+
+```{r, include=FALSE}
+# Set up citation management
+library(knitcitations)
+knitcitations::cleanbib()
+knitcitations::cite_options(citation_format = 'pandoc', cite.style = 'authoryear', hyperlink = 'to.bib', super = TRUE)
+```
+
+```{r}
+library(dplyr)
+library(reshape2)
+library(ggplot2)
+library(magrittr)
+library(DT)
+
+options(stringsAsFactors = FALSE)
+
+write.delim <- function(x, file, sep='\t', quote = FALSE, row.names=FALSE, na = '', ...) {
+  write.table(x = x, file = file, sep=sep, quote=quote, row.names=row.names, na=na, ...)
+}
+```
+
+Here, we parse the OFFSIDES resource `r knitcitations::citep('10.1126/scitranslmed.3003377')`, which can be [downloaded here](https://www.pharmgkb.org/downloads/).
+
+```{r}
+raw.df <- file.path('download', '3003377s-offsides.tsv.gz') %>%
+  read.delim(stringsAsFactors=FALSE)
+```
+
+Number of nominally significant adverse events in OFFSIDES: `r nrow(raw.df)`.
+
+```{r, fig.height=5.5}
+raw.df %>%
+  dplyr::select(rr:bg_correction) %>%
+  dplyr::mutate(mlog10_pval = -log10(pvalue)) %>%
+  #dplyr::sample_n(size = 100000) %>%
+  reshape2::melt() %>%
+  ggplot(aes(x = value)) + theme_bw() +
+    geom_histogram() +
+    facet_wrap(~ variable, scales='free_x', ncol=3) +
+    scale_y_sqrt() + xlab(NULL)
+```
+
+```{r}
+raw.df %>%
+  dplyr::select(-(rr:bg_correction)) %>%
+  dplyr::sample_n(size = 1000) %>%
+  DT::datatable()
+```
+
+# References
+```{r, include=FALSE}
+knitcitations::write.bibtex(file = 'references.bib', append = FALSE)
+```
